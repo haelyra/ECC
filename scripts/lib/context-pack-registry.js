@@ -96,6 +96,7 @@ function buildEntry(reader, modules, root, name, override = {}) {
     ownerModuleId: owners[0].id, packId: owners[0].id,
     declaredInstallTargets: [...new Set(owners[0].targets)].sort(),
     dependencies: [...(override.dependencies || [])].sort(),
+    requiredResources: [...(override.requiredResources || [])].sort(),
     dependencyCoverage: 'declared-only-unreviewed',
     resources, contentDigest: digestObject(resources),
   };

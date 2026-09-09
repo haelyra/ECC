@@ -106,6 +106,7 @@ function compileContextProfile({
     entries: selected.map(entry => ({
       id: entry.id, selection: entry.selection, reason: entry.reason,
       sourcePath: entry.sourcePath, contentDigest: entry.contentDigest,
+      requiredResources: [...entry.requiredResources],
       projection: projectionFor(entry, target),
     })),
     estimate: estimateMetadata(selected, target, profile),
