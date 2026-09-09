@@ -53,7 +53,25 @@ The installed public dispatcher produced all ten Lean/Full carrier objects with 
 
 A separate policy simulation denying Windows file symlinks passed all 54 new resource/carrier/fixture cases with zero skips. Directory links use junctions on Windows. This simulation supplies no native Windows filesystem or provider evidence.
 
-Hosted review of the prerequisite PR subsequently identified dry-run argument ordering and directory-enumeration bounds. Fixes and their dependent-stack revalidation are recorded separately below when complete; the `d52d3430` results remain a pinned earlier checkpoint.
+Hosted review of the prerequisite PR subsequently identified dry-run argument ordering and directory-enumeration bounds. Fixes and their dependent-stack revalidation follow; the `d52d3430` results remain a pinned earlier checkpoint.
+
+## September 9 review hardening and final verification
+
+The stack inherits the prerequisite PR's global dry-run fix `9b5e3934` and bounded-reader fix `5f9503e6`. Their RED checkpoints are `c373b7fe` (27 CLI passes, 4 failures) and `ea00894d` (7 support-test failures). The reader keeps all file-byte and identity protections and now limits incremental directory enumeration. Public context-profile documentation describes the exact limits. Source-reader extraction received independent security review; its largest function is 20 lines.
+
+Carrier checkpoint `ebd43bef` independently reproduced the global flag failure: 6 CLI cases passed and 1 failed. Merging the prerequisite fixes in `072a3160` makes all 7 carrier CLI cases pass, including a leading global flag and a flag between an option and its value.
+
+The first merged focused run passed 98 outer tests and failed 2 alias regressions because their old `readdirSync` mocks no longer supplied synthetic alias names to the incremental reader. Test-only correction `46924366` models those same source directories through `opendirSync` instead. Both case/NFC spellings and the mandatory zero-staging-write assertions remain unchanged; independent review reran all 19 fixture cases successfully. No runtime change was needed.
+
+Final focused execution uses the coverage command above plus `tests/lib/context-profile-support.test.js`. It passes 132 logical cases, zero failures or skips: 18 registry, 7 support, 12 compiler, 13 resource, 22 carrier, 19 fixture, 31 original CLI, 7 carrier CLI and 3 CI. Outer TAP reports 100 passes. Runtime coverage is 98.37% statements/lines, 91.43% branches and 100% functions, with every threshold passing.
+
+Both prerequisite and carrier full-suite commands exited 0 with legacy aggregates of 4,429 passed and zero failed. The carrier run began at `072a3160`; its test-only mock correction was applied before the runner reached that fixture file, whose final 19/19 result was observed in the complete run. Runtime and packed files remained unchanged throughout. The final focused run independently exercised the corrected tests. Later changes update source-only evidence.
+
+The rebuilt carrier archive at runtime revision `072a3160` has SHA-256 `45ef651dfab1a9da9af7b7b4b4546c84bc6b325a31a95dac47d52def060649e6`. Its offline cached install and all ten installed-provider-layout Lean/Full parity and structural checks passed again. The archive has 2,628 entries; none of these checks launches a provider. A Git diff verifies final runtime, schemas, manifests, package declarations, lockfiles and packed contracts are byte-identical to that revision.
+
+The prerequisite runtime at `e54fd44c` separately passes 71 focused cases, 98.49% statements/lines, 90.46% branches and 100% functions, plus the full 4,429 aggregate. Its rebuilt offline-consumer archive has SHA-256 `e96826df9b336e180408c7765dcd4e09fca2fb7eb7252cbf84f2ff99d036b1a7`. Later prerequisite commit `be393cb0` only reconciles the source-only dependency evidence. Hosted CI is still pending for the latest PR revision.
+
+Lower-priority review suggestions remain explicit follow-ups: failing projection labels, one exported supported-profile list, richer budget-failure inspection and preserving dual CLI/snapshot diagnostics. Process-lifetime compiler caching is deferred until an immutable snapshot and invalidation contract exists. The current schema fixes the budget at 8,000; alternate ceilings are rejected. Private fixtures currently have only synchronous callers, and noncanonical skill-root directories remain rejected under the existing inventory policy.
 
 ## Claims deliberately left unobserved
 
