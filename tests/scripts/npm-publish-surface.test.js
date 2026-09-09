@@ -106,6 +106,7 @@ function buildExpectedPublishPaths(repoRoot) {
     "docs/COMMAND-AGENT-MAP.md",
     "docs/design/ecc-memory-vault.md",
     "docs/design/context-profiles.md",
+    "docs/design/context-carriers.md",
     "assets/images/sponsors",
   ]
   const exclusionPaths = [
@@ -164,12 +165,15 @@ function main() {
         "scripts/lib/context-profiles.js",
         "scripts/lib/context-pack-registry.js",
         "scripts/lib/context-profile-support.js",
+        "scripts/lib/context-carriers.js",
         "schemas/context-profile.schema.json",
         "schemas/context-pack-registry.schema.json",
+        "schemas/context-carrier.schema.json",
         "manifests/context-profiles/lean@1.json",
         "manifests/context-profiles/full@1.json",
         "manifests/context-packs/skill-registry@1.json",
         "docs/design/context-profiles.md",
+        "docs/design/context-carriers.md",
         "scripts/control-pane.js",
         "scripts/feedback.js",
         "scripts/ito.js",
