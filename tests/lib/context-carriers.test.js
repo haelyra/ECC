@@ -246,6 +246,22 @@ test('duplicate native names and case-colliding destination resources are reject
   })), () => assert.throws(() => plan({ repoRoot: root }), /collision|duplicate/i));
 }));
 
+test('case-aliased ancestor directories with different child files are rejected', context => withFixture(root => (
+  withRegistryView(context, registry => changeSelectedEntry(registry, entry => ({
+    ...entry, resources: [...entry.resources, ...['Case/one.md', 'case/two.md'].map(file => ({
+      path: `skills/ecc-guide/${file}`, digest: 'a'.repeat(64), bytes: 1,
+    }))],
+  })), () => assert.throws(() => plan({ repoRoot: root }), /collision|alias/i))
+)));
+
+test('Unicode-normalization-aliased ancestors with different children are rejected', context => withFixture(root => (
+  withRegistryView(context, registry => changeSelectedEntry(registry, entry => ({
+    ...entry, resources: [...entry.resources, ...['caf\u00e9/one.md', 'cafe\u0301/two.md'].map(file => ({
+      path: `skills/ecc-guide/${file}`, digest: 'a'.repeat(64), bytes: 1,
+    }))],
+  })), () => assert.throws(() => plan({ repoRoot: root }), /collision|alias/i))
+)));
+
 test('nested SKILL.md resources are rejected case-insensitively', () => withFixture(root => {
   write(root, 'skills/feature/nested/skill.MD', 'Nested discovery entry.');
   assert.throws(() => plan({ repoRoot: root, include: ['skill:feature'] }), /nested|discovery.*entry/i);
