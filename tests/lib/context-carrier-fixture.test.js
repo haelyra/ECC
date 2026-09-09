@@ -190,6 +190,59 @@ test('unsafe or colliding destinations are rejected while outside sentinels rema
     /duplicate|collision|destination|schema/i);
 }));
 
+for (const [label, spellings] of [
+  ['case-folded', ['Case', 'case']],
+  ['Unicode-normalized', ['caf\u00e9', 'cafe\u0301']],
+]) {
+  test(`${label} directory-prefix aliases fail before the first staging write`, context => withFixture(repoRoot => {
+    const initial = request(repoRoot);
+    const files = ['one.txt', 'two.txt'];
+    spellings.forEach((directory, index) => {
+      write(repoRoot, `skills/ecc-guide/${directory}/${files[index]}`, `resource ${index}`);
+    });
+    const skillRoot = path.join(fs.realpathSync(repoRoot), 'skills/ecc-guide');
+    const originalList = fs.readdirSync;
+    // Model both directory spellings even when the test host aliases them.
+    context.mock.method(fs, 'readdirSync', (directory, ...args) => {
+      if (directory === skillRoot) {
+        return [...originalList(directory).filter(name => !spellings.includes(name)), ...spellings];
+      }
+      const index = spellings.findIndex(spelling => directory === path.join(skillRoot, spelling));
+      return index >= 0 ? [files[index]] : originalList(directory, ...args);
+    });
+    const { loadContextRegistry } = require('../../scripts/lib/context-pack-registry');
+    const registry = loadContextRegistry({ repoRoot });
+    const expectedPlan = compileContextProfile({ repoRoot, target: 'codex', selectionMode: 'manual' });
+    const byId = new Map(registry.entries.map(entry => [entry.id, entry]));
+    const selected = expectedPlan.selectedIds.map(id => byId.get(id));
+    const copies = selected.flatMap(entry => entry.resources.map(resource => ({
+      kind: 'copy', skillId: entry.id, sourcePath: resource.path,
+      destinationPath: `${initial.artifact.layout.skillRoot}/${entry.name}/${resource.path.slice(path.posix.dirname(entry.sourcePath).length + 1)}`,
+      digest: resource.digest, bytes: resource.bytes,
+    })));
+    const bindings = Object.fromEntries(['registryDigest', 'profileDigest', 'compilerDigest', 'planDigest']
+      .map(key => [key, expectedPlan[key]]));
+    const artifact = resign(initial.artifact, { ...bindings,
+      entries: initial.artifact.entries.map(entry => ({ ...entry, contentDigest: byId.get(entry.id).contentDigest })),
+      files: [...copies, ...initial.artifact.files.filter(file => file.kind === 'generated')]
+        .sort((left, right) => left.destinationPath < right.destinationPath ? -1 : 1),
+    });
+    const originalWrite = fs.writeFileSync;
+    let stagingWrites = 0;
+    let failure;
+    context.mock.method(fs, 'writeFileSync', (...args) => {
+      stagingWrites++;
+      return originalWrite(...args);
+    });
+    try { withCarrierFixture({ repoRoot, artifact, expectedPlan }, () => {}); }
+    catch (error) { failure = error; }
+    context.mock.restoreAll();
+    assert.equal(stagingWrites, 0, 'Portable ancestor aliases must fail before writing the owned stage');
+    assert.ok(failure, 'Portable ancestor alias must be rejected');
+    assert.match(failure.message, /ancestor|collision|alias|prefix/i);
+  }));
+}
+
 test('unsupported carriers cannot create a staged fixture', () => withFixture(repoRoot => {
   const options = request(repoRoot, { target: 'gemini' });
   assert.equal(options.artifact.status, 'unsupported');
