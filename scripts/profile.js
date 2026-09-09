@@ -5,7 +5,7 @@ const path = require('path');
 
 const ROOT = path.resolve(__dirname, '..');
 const PROFILE_IDS = Object.freeze(['lean@1', 'full@1']);
-const COMMANDS = Object.freeze(['show', 'preview', 'explain']);
+const COMMANDS = Object.freeze(['show', 'preview', 'explain', 'carrier']);
 const VALUES = Object.freeze(['--target', '--selection', '--include', '--exclude']);
 
 function helpText() {
@@ -16,10 +16,13 @@ Usage:
   ecc profile preview [lean@1|full@1] [--target codex] [--selection auto|manual|suggest]
       [--include skill:<id>] [--exclude skill:<id>] [--json]
   ecc profile explain skill:<id> [--target codex] [--json]
+  ecc profile carrier [lean@1|full@1] [--target codex] [--selection auto|manual|suggest]
+      [--include skill:<id>] [--exclude skill:<id>] [--json]
 
 Include/exclude flags may be repeated. Preview defaults: lean@1, codex, auto.
 These defaults describe a proposal, not your installed configuration.
 No command installs, activates, invokes skills, enables hooks, or grants authority.
+Carrier lists proposed files only; it accepts no destination and writes no artifact.
 Token estimates cover skill metadata only; actual host context remains unobserved.
 The existing install --profile and hook profile flags keep their own meanings.
 `;
@@ -55,8 +58,8 @@ function parseArgs(argv) {
     else throw new Error(`Unknown argument: ${arg}`);
   }
   if (parsed.help) return parsed;
-  if (!parsed.command) throw new Error('Choose show, preview, or explain');
-  const allowed = parsed.command === 'preview' ? VALUES
+  if (!parsed.command) throw new Error('Choose show, preview, explain, or carrier');
+  const allowed = ['preview', 'carrier'].includes(parsed.command) ? VALUES
     : parsed.command === 'explain' ? ['--target'] : [];
   for (const flag of seen) {
     if (!allowed.includes(flag)) throw new Error(`${flag} is unavailable for ${parsed.command}`);
@@ -82,6 +85,18 @@ function buildResponse(options, repoRoot = ROOT) {
   if (options.command === 'explain') {
     return envelope('success', 'Exact catalog entry; no skill has been loaded or invoked.', {
       entry: explainContextEntry({ repoRoot, id: options.id, target: options.target }),
+    });
+  }
+  if (options.command === 'carrier') {
+    const { planContextCarrier } = require('./lib/context-carriers');
+    const carrier = planContextCarrier({ repoRoot, profileId: options.id || 'lean@1',
+      target: options.target, selectionMode: options.selectionMode,
+      include: options.include, exclude: options.exclude });
+    return envelope('warning', 'Proposed skill-only carrier; no files written and native discovery remains unobserved.', {
+      carrier, artifacts: [{ kind: 'context-carrier', digest: carrier.carrierDigest }],
+      next_actions: [carrier.status === 'unsupported'
+        ? 'This target has no carrier layout yet. Choose an implemented target or add a tested adapter.'
+        : 'Review file mappings and collect disposable fixture and native discovery evidence before activation.'],
     });
   }
   const plan = compileContextProfile({ repoRoot, profileId: options.id || 'lean@1',
@@ -110,6 +125,13 @@ function formatText(response) {
       `Metadata estimate: ${plan.estimate.estimatedTokens} tokens (${plan.estimate.method}).`,
       'Whole ECC startup budget: unobserved; this estimate does not certify a native host.',
       `Plan digest: ${plan.planDigest}`, ...plan.limitations);
+  }
+  if (response.carrier) {
+    const carrier = response.carrier;
+    lines.push(`Carrier: ${carrier.status}; profile: ${carrier.profileId}; target: ${carrier.target}`,
+      `Selected: ${carrier.selectedIds.length}; routed: ${carrier.routedIds.length}; excluded: ${carrier.excludedIds.length}`,
+      `Proposed files: ${carrier.files.length}; native discovery: ${carrier.nativeSupport}`,
+      `Carrier digest: ${carrier.carrierDigest}`, ...carrier.limitations);
   }
   lines.push(...response.next_actions.map(action => `Next: ${action}`));
   const text = `${lines.join('\n')}\n`;
