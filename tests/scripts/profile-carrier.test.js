@@ -96,6 +96,11 @@ test('carrier text and dry-run output preserve read-only and unobserved boundari
   assert.match(result.stdout, /carrier/i);
   assert.match(result.stdout, /unobserved/i);
   assert.match(result.stdout, /planned|proposed/i);
+  const expected = payload(run(['carrier', 'lean@1', '--target', 'codex', '--json']));
+  for (const args of [
+    ['--dry-run', 'carrier', 'lean@1', '--target', 'codex', '--json'],
+    ['carrier', 'lean@1', '--target', '--dry-run', 'codex', '--json'],
+  ]) assert.deepEqual(payload(run(args)), expected);
 }));
 
 test('carrier rejects unknown targets, write destinations, and hook flags', () => withReadOnlyCli(run => {
