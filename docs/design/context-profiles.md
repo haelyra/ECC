@@ -82,7 +82,7 @@ Dependencies come only from `overrides[].dependencies` in the registry declarati
 
 `overrides[].requiredResources` can assert that files exist within that skill's own directory. Unknown override IDs, duplicate ownership, missing resources, unknown dependencies, cycles, malformed metadata, unsafe paths, and symbolic links within the source tree are rejected. Reads are bounded at 4 MiB per file, 16 MiB per source reader, 10,000 files, and 32 levels of recursive directory depth. Generated Python caches, `.git`, and `node_modules` are excluded; an explicitly required excluded resource is rejected. Whole-directory listing size is not independently capped in this slice.
 
-Resolved entries currently list every included resource without a separate required-resource annotation. Before P2 performs selective resource projection, preserve those declarations explicitly in its output contract and add omission tests. Until then, a carrier must not infer that arbitrary subsets are sufficient.
+P2a adds sorted explicit `requiredResources` to registry and plan entries. The mandatory `sourcePath` entrypoint remains distinct; effective required paths are their union. Empty declarations do not establish resource closure, and carriers must not infer that arbitrary subsets are sufficient. The first carrier implementation projects all bundled files for selected skills; see the [P2 carrier contract](context-carriers.md).
 
 Source reads revalidate ancestor and file identities before consuming bytes and after reading. These consistency checks reject the tested concurrent symlink substitution; they do not provide an atomic repository snapshot. Use immutable source artifacts for downstream execution. Skill and profile metadata reject terminal controls; CLI text also renders controls inert in error paths.
 
@@ -146,7 +146,7 @@ The original September 8 dependency baseline pinned js-yaml 4.3.1, affected by [
 
 ## Follow-on gates and verification
 
-P2 adds provider carriers and conformance evidence. P3 adds transactional activation, receipts, ownership, migration, recovery, and rollback. P4 adds structured task selection, agent proposals, and bounded automatic routing. P5 integrates hook plans with explicit, separately retained consent. P6 earns release-default changes through package, operating-system, harness, compatibility, and recovery tests. None of those stages is implied by a successful preview.
+P2 now has resource-complete read-only carrier projections and disposable structural acceptance fixtures. Native fresh-session discovery and invocation remain unobserved. P3 adds transactional activation, receipts, ownership, migration, recovery, and rollback. P4 adds structured task selection, agent proposals, and bounded automatic routing. P5 integrates hook plans with explicit, separately retained consent. P6 earns release-default changes through package, operating-system, harness, compatibility, and recovery tests. None of those later stages is implied by a successful preview.
 
 The first-slice checks live in [registry tests](../../tests/lib/context-pack-registry.test.js), [profile tests](../../tests/lib/context-profiles.test.js), [CLI tests](../../tests/scripts/profile.test.js), and the [context-profile validator](../../scripts/ci/validate-context-profiles.js). They cover source and selection validation, deterministic provenance, metadata boundaries, and read-only behavior. Those fixtures do not replace native fresh-session, activation, workflow, or whole-system measurement evidence.
 

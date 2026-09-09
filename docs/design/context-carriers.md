@@ -1,6 +1,6 @@
 # Skill-only context carriers
 
-Status: P2 development following the read-only foundation in [PR #3037](https://github.com/affaan-m/ECC/pull/3037). This is a source implementation contract, not an installation, activation, or native discovery certificate.
+Status: P2a/P2b/P2c implemented and focused checks passed, following the read-only foundation in [PR #3037](https://github.com/affaan-m/ECC/pull/3037). This is a source implementation contract, not an installation, activation, or native discovery certificate.
 
 M1 context profiles determine proposed discovery. Carrier layouts map that proposal into a portable file inventory. Sandbox authority, hooks, tool permissions, task routing, and user settings remain separate. See the [profile contract](context-profiles.md) for Lean/Full and selection semantics.
 
