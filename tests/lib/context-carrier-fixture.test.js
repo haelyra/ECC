@@ -202,13 +202,22 @@ for (const [label, spellings] of [
     });
     const skillRoot = path.join(fs.realpathSync(repoRoot), 'skills/ecc-guide');
     const originalList = fs.readdirSync;
+    const originalOpen = fs.opendirSync;
     // Model both directory spellings even when the test host aliases them.
-    context.mock.method(fs, 'readdirSync', (directory, ...args) => {
+    context.mock.method(fs, 'opendirSync', (directory, ...args) => {
+      let names;
       if (directory === skillRoot) {
-        return [...originalList(directory).filter(name => !spellings.includes(name)), ...spellings];
+        names = [...originalList(directory).filter(name => !spellings.includes(name)), ...spellings];
+      } else {
+        const index = spellings.findIndex(spelling => directory === path.join(skillRoot, spelling));
+        if (index < 0) return originalOpen(directory, ...args);
+        names = [files[index]];
       }
-      const index = spellings.findIndex(spelling => directory === path.join(skillRoot, spelling));
-      return index >= 0 ? [files[index]] : originalList(directory, ...args);
+      let index = 0;
+      return {
+        readSync: () => index < names.length ? { name: names[index++] } : null,
+        closeSync() {},
+      };
     });
     const { loadContextRegistry } = require('../../scripts/lib/context-pack-registry');
     const registry = loadContextRegistry({ repoRoot });
