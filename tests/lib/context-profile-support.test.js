@@ -34,9 +34,23 @@ function mockEnumeration(context, entriesFor) {
 
 function changedIdentity(stats) {
   const changed = Object.assign(Object.create(Object.getPrototypeOf(stats)), stats);
-  changed.ino = typeof stats.ino === 'bigint' ? stats.ino + 1n : stats.ino + 1;
+  // Windows inode numbers can exceed safe integer precision, so adding 1 may be a no-op.
+  const zero = typeof stats.ino === 'bigint' ? 0n : 0;
+  const one = typeof stats.ino === 'bigint' ? 1n : 1;
+  changed.ino = stats.ino === zero ? one : zero;
   return changed;
 }
+
+test('identity mock changes inode values beyond safe integer precision', () => {
+  for (const ino of [0, 1, 2 ** 60, 0n, 1n, 2n ** 60n]) {
+    const stats = { ino, dev: 1, mode: 16877 };
+    const changed = changedIdentity(stats);
+    assert.notEqual(changed.ino, stats.ino);
+    assert.equal(typeof changed.ino, typeof stats.ino);
+    assert.equal(changed.dev, stats.dev);
+    assert.equal(changed.mode, stats.mode);
+  }
+});
 
 function samePath(left, right) {
   const normalize = value => path.resolve(value).toLowerCase();
